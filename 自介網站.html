@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Portfolio | Editable Grid</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 0. 變數與基礎設定 --- */
+        :root {
+            --bg-color: #ffffff;
+            --text-main: #111111;
+            --text-sub: #666666;
+            --border-color: #e5e5e5;
+            --geo-shape: #f4f4f4;
+            --spacing-section: 120px;
+        }
+
+        html { scroll-behavior: smooth; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .nav-link, .project-cat, .subtitle, .num-label, .upload-hint {
+            font-family: 'Space Mono', monospace;
+        }
+
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
+
+        /* --- 1. 通用佈局元件 --- */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        section {
+            padding: var(--spacing-section) 0;
+            position: relative;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            right: -20px; top: 0; width: 10px; height: 10px;
+            background-color: var(--text-main);
+        }
+
+        /* --- 2. 導覽列 --- */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-container {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 70px; padding: 0 40px; max-width: 1100px; margin: 0 auto;
+        }
+
+        .logo { font-weight: 700; font-size: 1.2rem; letter-spacing: -1px; }
+        .nav-links { display: flex; gap: 30px; }
+        .nav-link { font-size: 0.9rem; color: var(--text-sub); }
+        .nav-link:hover { color: var(--text-main); text-decoration: underline; }
+
+        /* --- 3. Hero Section --- */
+        .hero {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center;
+            overflow: hidden;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 700; line-height: 1.1; letter-spacing: -3px; z-index: 2;
+        }
+
+        .hero .subtitle {
+            margin-top: 20px; color: var(--text-sub); font-size: 1.1rem;
+            display: flex; align-items: center; gap: 15px;
+        }
+        .hero .subtitle::before {
+            content: ''; display: block; width: 40px; height: 1px; background: var(--text-main);
+        }
+
+        .geo-circle {
+            position: absolute; width: 50vw; height: 50vw; border-radius: 50%;
+            background-color: var(--geo-shape); top: -10vw; right: -10vw; z-index: -1;
+        }
+
+        /* --- 4. About Section --- */
+        .about-grid {
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 80px; align-items: start;
+        }
+
+        .about-img-box { position: relative; width: 100%; }
+        
+        .about-img {
+            width: 100%; aspect-ratio: 1/1; background-color: #f0f0f0;
+            filter: grayscale(100%); object-fit: cover; position: relative; z-index: 2;
+        }
+
+        .about-img-box::after {
+            content: ''; position: absolute; top: 20px; left: 20px;
+            width: 100%; height: 100%; border: 1px solid var(--text-main);
+            z-index: 1; pointer-events: none;
+        }
+
+        .upload-btn-sm {
+            display: inline-block; margin-top: 25px; padding: 8px 20px;
+            border: 1px dashed var(--text-sub); color: var(--text-sub);
+            font-size: 0.8rem; cursor: pointer; transition: 0.3s;
+            position: relative; z-index: 5; background: #fff;
+            font-family: 'Space Mono', monospace;
+        }
+        .upload-btn-sm:hover {
+            border-color: var(--text-main); color: var(--text-main); background-color: #f9f9f9;
+        }
+
+        .about-text p { margin-bottom: 20px; text-align: justify; }
+
+        /* --- 5. Expertise --- */
+        .expertise-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            border-top: 1px solid var(--border-color); border-left: 1px solid var(--border-color);
+        }
+        .expertise-item {
+            padding: 40px; border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color); transition: 0.3s;
+        }
+        .expertise-item:hover { background-color: var(--text-main); color: #fff; }
+        .expertise-item:hover .num-label { color: #888; }
+        .num-label { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 15px; display: block; }
+
+        /* --- 6. Portfolio Section (可編輯版) --- */
+        .portfolio-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 60px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;
+        }
+        .filter-btn {
+            background: none; border: none; margin-left: 20px;
+            font-family: 'Space Mono', monospace; cursor: pointer; color: var(--text-sub); position: relative;
+        }
+        .filter-btn.active, .filter-btn:hover { color: var(--text-main); }
+        .filter-btn.active::after {
+            content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 2px; background: var(--text-main);
+        }
+
+        /* 網格設定 */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        /* 隱藏所有 input[type=file] */
+        input[type="file"] { display: none; }
+
+        /* 專案卡片樣式 (維持原樣 + 游標指針) */
+        .project-card {
+            display: block;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer; /* 讓滑鼠變成手指，暗示可點擊 */
+            background-color: #fff;
+        }
+
+        .image-frame {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background-color: #f0f0f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%);
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.3s;
+        }
+
+        /* Hover 特效：圖片放大 */
+        .project-card:hover .project-img {
+            transform: scale(1.05);
+            /* filter: grayscale(0%); <--- 如果想要 hover 變彩色，把這行註解拿掉 */
+        }
+
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(17, 17, 17, 0.85);
+            opacity: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.3s;
+        }
+
+        .project-card:hover .overlay { opacity: 1; }
+
+        .plus-icon {
+            width: 30px; height: 30px; position: relative; margin-bottom: 15px;
+        }
+        .plus-icon::before, .plus-icon::after {
+            content: ''; position: absolute; background: #fff;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+        .plus-icon::before { width: 100%; height: 1px; }
+        .plus-icon::after { width: 1px; height: 100%; }
+
+        .project-info { text-align: center; color: #fff; transform: translateY(20px); transition: 0.3s; }
+        .project-card:hover .project-info { transform: translateY(0); }
+        .project-title { font-size: 1.2rem; font-weight: 700; }
+        .project-cat { font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* 提示文字 (只在 hover 時顯示，提醒用戶可以點擊上傳) */
+        .upload-hint {
+            font-size: 0.7rem; color: #666; margin-top: 15px; 
+            border: 1px solid #666; padding: 2px 8px; opacity: 0.7;
+        }
+
+        /* --- 7. Contact & Footer --- */
+        .contact-box {
+            text-align: center; border: 1px solid var(--border-color); padding: 80px 20px;
+            background: linear-gradient(45deg, #fff 25%, #fafafa 25%, #fafafa 50%, #fff 50%, #fff 75%, #fafafa 75%, #fafafa 100%);
+            background-size: 20px 20px;
+        }
+        .cta-btn {
+            display: inline-block; margin-top: 30px; padding: 15px 50px;
+            background-color: var(--text-main); color: #fff; font-family: 'Space Mono';
+            text-transform: uppercase; letter-spacing: 2px; font-size: 0.9rem;
+        }
+        .cta-btn:hover {
+            background-color: #333; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        footer {
+            padding: 40px 0; text-align: center; font-size: 0.8rem; color: var(--text-sub);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* --- Mobile RWD --- */
+        @media (max-width: 768px) {
+            :root { --spacing-section: 80px; }
+            .nav-links { display: none; }
+            .about-grid { grid-template-columns: 1fr; }
+            .about-img-box { width: 80%; margin: 0 auto 40px auto; }
+            .about-img-box::after { height: 100%; }
+            .portfolio-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+            .filter-btn { margin-left: 0; margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo">YOUR.NAME</a>
+            <ul class="nav-links">
+                <li><a href="#about" class="nav-link">ABOUT</a></li>
+                <li><a href="#expertise" class="nav-link">EXPERTISE</a></li>
+                <li><a href="#portfolio" class="nav-link">WORKS</a></li>
+                <li><a href="#contact" class="nav-link">CONTACT</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="geo-circle"></div>
+        <div class="container">
+            <span style="display:block; width: 60px; height: 4px; background:var(--text-main); margin-bottom: 30px;"></span>
+            <h1>LESS IS<br>DEFINITELY<br><span style="color: #999;">MORE.</span></h1>
+            <p class="subtitle">極簡主義設計師 / 幾何美學 / 前端開發</p>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-img-box">
+                    <img id="profile-display" src="https://placehold.co/600x600/eeeeee/333333?text=Profile" alt="Profile" class="about-img">
+                    <div style="text-align: center;">
+                        <label for="profile-upload" class="upload-btn-sm">[ UPDATE PHOTO ]</label>
+                        <input type="file" id="profile-upload" accept="image/*">
+                    </div>
+                </div>
+                <div class="about-text">
+                    <h2>01. 關於我</h2>
+                    <p>我相信設計不只是視覺的堆疊，而是訊息的提煉。在這個充滿雜訊的世界裡，我致力於透過清晰的邏輯與幾何美學，將複雜的功能轉化為直觀的體驗。</p>
+                    <p>我的設計語言專注於黑白灰的純粹，去除多餘的裝飾，只保留最核心的價值。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="expertise">
+        <div class="container">
+            <h2>02. 專業技能</h2>
+            <div class="expertise-grid">
+                <div class="expertise-item">
+                    <span class="num-label">/ 01</span>
+                    <h3>UI/UX Design</h3>
+                    <p style="margin-top: 15px; font-size: 0.95rem;">介面設計、使用者流程規劃、Design System 建置。</p>
+                </div>
+                <div class="expertise-item">
+                    <span class="num-label">/ 02</span>
+                    <h3>Web Dev</h3>
+                    <p style="margin-top: 15px; font-size: 0.95rem;">HTML5, CSS3, JavaScript。重視效能與動態細節。</p>
+                </div>
+                <div class="expertise-item">
+                    <span class="num-label">/ 03</span>
+                    <h3>Branding</h3>
+                    <p style="margin-top: 15px; font-size: 0.95rem;">企業識別、Logo 設計、視覺規範。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="portfolio">
+        <div class="container">
+            <div class="portfolio-header">
+                <h2>03. 精選作品</h2>
+                <div class="portfolio-filter">
+                    <button class="filter-btn active">ALL</button>
+                    <button class="filter-btn">WEB</button>
+                    <button class="filter-btn">GRAPHIC</button>
+                </div>
+            </div>
+
+            <div class="portfolio-grid">
+                
+                <div class="project-card" onclick="triggerUpload('upload-1')">
+                    <input type="file" id="upload-1" accept="image/*" onchange="updateCard(this, 'img-1', 'title-1', 'cat-1')">
+                    <div class="image-frame">
+                        <img id="img-1" src="https://placehold.co/600x450/dddddd/333333?text=Work+01" class="project-img">
+                        <div class="overlay">
+                            <div class="plus-icon"></div>
+                            <div class="project-info">
+                                <div id="title-1" class="project-title">幾何視界</div>
+                                <div id="cat-1" class="project-cat">Web Design</div>
+                                <div class="upload-hint">CLICK TO EDIT</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card" onclick="triggerUpload('upload-2')">
+                    <input type="file" id="upload-2" accept="image/*" onchange="updateCard(this, 'img-2', 'title-2', 'cat-2')">
+                    <div class="image-frame">
+                        <img id="img-2" src="https://placehold.co/600x450/cccccc/333333?text=Work+02" class="project-img">
+                        <div class="overlay">
+                            <div class="plus-icon"></div>
+                            <div class="project-info">
+                                <div id="title-2" class="project-title">純粹黑白</div>
+                                <div id="cat-2" class="project-cat">Branding</div>
+                                <div class="upload-hint">CLICK TO EDIT</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card" onclick="triggerUpload('upload-3')">
+                    <input type="file" id="upload-3" accept="image/*" onchange="updateCard(this, 'img-3', 'title-3', 'cat-3')">
+                    <div class="image-frame">
+                        <img id="img-3" src="https://placehold.co/600x450/bbbbbb/333333?text=Work+03" class="project-img">
+                        <div class="overlay">
+                            <div class="plus-icon"></div>
+                            <div class="project-info">
+                                <div id="title-3" class="project-title">無聲攝影</div>
+                                <div id="cat-3" class="project-cat">Photography</div>
+                                <div class="upload-hint">CLICK TO EDIT</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card" onclick="triggerUpload('upload-4')">
+                    <input type="file" id="upload-4" accept="image/*" onchange="updateCard(this, 'img-4', 'title-4', 'cat-4')">
+                    <div class="image-frame">
+                        <img id="img-4" src="https://placehold.co/600x450/aaaaaa/333333?text=Work+04" class="project-img">
+                        <div class="overlay">
+                            <div class="plus-icon"></div>
+                            <div class="project-info">
+                                <div id="title-4" class="project-title">數據後台</div>
+                                <div id="cat-4" class="project-cat">Dashboard UI</div>
+                                <div class="upload-hint">CLICK TO EDIT</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="container">
+            <div class="contact-box">
+                <h2>04. 開始合作</h2>
+                <p style="max-width: 600px; margin: 0 auto; color: var(--text-sub);">
+                    如果您喜歡極簡、理性的設計風格，或者有任何專案想討論，歡迎隨時透過 Email 與我聯繫。
+                </p>
+                <a href="mailto:your.email@example.com" class="cta-btn">Get In Touch</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 YOUR NAME. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. 關於我 - 更換照片 ---
+        const profileInput = document.getElementById('profile-upload');
+        const profileDisplay = document.getElementById('profile-display');
+        
+        profileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) { profileDisplay.src = e.target.result; }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 2. 作品集 - 觸發上傳 ---
+        function triggerUpload(inputId) {
+            document.getElementById(inputId).click();
+        }
+
+        // --- 3. 作品集 - 更新內容 (圖片 + 標題 + 類別) ---
+        function updateCard(input, imgId, titleId, catId) {
+            // 避免點擊 input 本身時冒泡造成重複觸發，並檢查有無檔案
+            const file = input.files[0];
+            if (file) {
+                // 讀取圖片
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(imgId).src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+
+                // 詢問使用者輸入新文字 (使用瀏覽器原生介面)
+                setTimeout(() => {
+                    const newTitle = prompt("請輸入專案標題 (Title):", "My New Project");
+                    const newCat = prompt("請輸入專案類別 (Category):", "WEB DESIGN");
+
+                    if(newTitle) document.getElementById(titleId).innerText = newTitle;
+                    if(newCat) document.getElementById(catId).innerText = newCat;
+                }, 100); // 稍微延遲讓圖片先開始讀取
+            }
+        }
+
+        // 阻止 Input 點擊時冒泡傳遞給父層 Div (避免無窮迴圈)
+        document.querySelectorAll('.project-card input').forEach(input => {
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
+    </script>
+
+</body>
+</html>
