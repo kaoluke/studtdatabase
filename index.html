@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>StudyFlow </title>
+    <title>StudyFlow - 完整互動版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -29,6 +28,48 @@
         @keyframes pageEnter { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 80% { transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 導覽系統專用樣式 (Spotlight) --- */
+        /* 1. 聚光燈遮罩：使用超大 box-shadow 來製造聚光燈效果 */
+        .spotlight-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 999990; /* 確保在最上層 */
+            pointer-events: none; /* 讓點擊穿透到下方高亮元素 */
+            transition: all 0.4s ease;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75); /* 關鍵：用陰影蓋住全畫面 */
+            border-radius: 16px; /* 聚光燈圓角 */
+            display: none;
+        }
+        
+        /* 2. 說明氣泡 */
+        .guide-tooltip {
+            position: fixed;
+            z-index: 999999; /* 比遮罩更高 */
+            background: white;
+            width: 300px;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s, top 0.4s ease, left 0.4s ease;
+        }
+        .guide-tooltip.show { opacity: 1; }
+        .guide-tooltip h3 { margin-bottom: 10px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .guide-tooltip p { color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+        .guide-footer { display: flex; justify-content: space-between; align-items: center; }
+        .btn-next { background: #000; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        .btn-skip { color: #999; background: none; border: none; cursor: pointer; font-size: 14px; }
+        
+        /* 3. 強制高亮輔助類別 (JS 動態添加) */
+        .highlight-target {
+            position: relative;
+            z-index: 999995 !important; /* 讓被選中的元素浮上來 */
+            background: white; /* 避免透明背景導致看不清 */
+            pointer-events: auto !important;
+        }
+        /* ----------------------- */
 
         .sidebar { width: 260px; background: rgba(255,255,255,0.85); backdrop-filter: blur(30px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; padding: 32px 20px; z-index: 20; }
         .logo { font-size: 22px; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; animation: popIn 0.8s var(--ease-bounce); }
@@ -78,7 +119,6 @@
         .subj-bar-bg { width: 100%; height: 10px; background: #F2F2F7; border-radius: 6px; overflow: hidden; }
         .subj-bar-fill { height: 100%; background: #1C1C1E; border-radius: 6px; width: 0%; transition: width 1s; }
 
-        /* --- 5. 資源列表 --- */
         .res-input-card { background: white; padding: 20px; border-radius: 18px; box-shadow: var(--shadow); margin-bottom: 24px; animation: slideUp 0.4s; }
         .link-list { display: flex; flex-direction: column; gap: 12px; }
         .link-card { 
@@ -97,7 +137,6 @@
         .link-del { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #ddd; border-radius: 50%; transition: 0.2s; z-index: 5; margin-left: 10px; }
         .link-del:hover { background: #FFF0E6; color: #FF3B30; }
 
-        /* PDF Modal */
         .pdf-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); opacity: 0; transition: 0.3s; }
         .pdf-modal-overlay.show { opacity: 1; }
         .pdf-container { width: 90%; height: 90%; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); position: relative; transform: scale(0.95); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; flex-direction: column; }
@@ -106,7 +145,6 @@
         .pdf-close-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
         iframe.pdf-frame { width: 100%; height: 100%; border: none; background: #fff; flex: 1; }
 
-        /* 其他通用 */
         .task-row { display: flex; align-items: center; padding: 16px; background: white; border-radius: 16px; margin-bottom: 12px; box-shadow: var(--shadow); animation: slideUp 0.3s; }
         .check-circle { width: 24px; height: 24px; border: 2px solid #D1D1D6; border-radius: 50%; margin-right: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .check-circle.checked { background: #000; border-color: #000; color: white; }
@@ -116,7 +154,6 @@
         .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
         .preset-btn { background: #F2F2F7; border: none; padding: 16px; border-radius: 16px; font-weight: 600; color: #333; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; }
 
-        /* Mobile Responsive */
         .mobile-header, .bottom-nav { display: none; }
         @media (max-width: 768px) {
             .sidebar { display: none !important; }
@@ -130,7 +167,6 @@
             .pdf-container { width: 100%; height: 100%; border-radius: 0; }
         }
 
-        /* AI & Modals */
         .ai-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #000; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 90; }
         .ai-win { position: fixed; bottom: 100px; right: 30px; width: 360px; height: 500px; background: white; border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,0.25); display: flex; flex-direction: column; transform: translateY(40px) scale(0.9); opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000; border: 1px solid #eee; }
         .ai-win.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
@@ -138,12 +174,10 @@
         .modal-overlay.show { opacity: 1; }
         .modal { background: white; width: 360px; padding: 28px; border-radius: 24px; transform: scale(0.9); transition: 0.3s; }
 
-        /* 返回按鈕樣式（小而扁） */
         .back-btn { background:#F2F2F7; border:none; padding:6px 10px; border-radius:10px; font-weight:700; cursor:pointer; color:var(--text-main); box-shadow: none; }
         .back-btn:hover { background:#EDEDED; }
         .pdf-back-btn { background: rgba(255,255,255,0.08); border:none; color: white; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:700; }
 
-        /* 科目快捷按鈕（預設色由 JS inline style 設定） */
         .subj-chip {
             border: none;
             padding: 8px 12px;
@@ -162,20 +196,17 @@
             color: #fff !important;
             box-shadow: 0 6px 18px rgba(0,0,0,0.15);
         }
-
-        /* --- 其他自訂樣式 --- */
-        /* ...existing custom styles... */
     </style>
 </head>
 <body>
 
 <div class="mobile-header">
-    <div style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px;"></i> StudyFlow</div>
+    <div style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px;">StudyFlow</div>
     <div id="m-auth-btn" onclick="app.auth.login()" style="width:36px; height:36px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden;"><i class="fa-solid fa-user" style="color:#999;"></i></div>
 </div>
 
 <nav class="sidebar">
-    <div class="logo"></i> StudyFlow</div>
+    <div class="logo">StudyFlow</div>
     <div class="nav-item active" data-target="home" onclick="app.nav('home')"><i class="fa-solid fa-house"></i> 首頁</div>
     <div class="nav-item" data-target="resources" onclick="app.nav('resources')"><i class="fa-solid fa-folder-open"></i> 講義資源</div>
     <div class="nav-item" data-target="music" onclick="app.nav('music')"><i class="fa-solid fa-music"></i> 音樂</div>
@@ -198,7 +229,6 @@
 
 <main class="main-content">
     <div class="content-wrap">
-        
         <div id="home" class="view-section active">
             <div class="header">
                 <h1 id="date-display"></h1>
@@ -211,14 +241,12 @@
                 <div class="stat-box"><div class="sb-label">今日專注</div><div class="sb-val" id="d-focus">0m</div></div>
                 <div class="stat-box"><div class="sb-label">連續登入</div><div class="sb-val" id="d-hist-len">0天</div></div>
             </div>
-            
             <div class="dash-split">
                 <div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;"><h3>近期任務</h3><button class="btn-black" onclick="app.modals.open('task')">＋</button></div>
                     <div id="dash-tasks"></div>
                 </div>
-                
-                <div class="pomo-card">
+                <div class="pomo-card" id="pomo-card-el">
                     <div style="font-size:12px; font-weight:700; color:#ccc; letter-spacing:1px; margin-bottom:10px;">ULTRA FOCUS</div>
                     <div class="timer-svg-container">
                         <svg class="timer-svg" viewBox="0 0 240 240">
@@ -239,7 +267,7 @@
 
         <div id="resources" class="view-section">
             <div class="header"><h1>講義資源</h1><p>這裡貼上你的雲端硬碟連結</p></div>
-            <div class="res-input-card">
+            <div class="res-input-card" id="res-input-card">
                 <input id="res-name" class="inp" placeholder="名稱 (例如: 物理Ch1 講義)">
                 <input id="res-url" class="inp" placeholder="貼上 Google Drive 共用連結..." style="margin-bottom:10px;">
                 <button class="btn-black" style="width:100%;" onclick="app.resources.add()">＋ 新增資源</button>
@@ -251,18 +279,17 @@
 
         <div id="music" class="view-section">
             <div class="header"><h1>專注音樂</h1></div>
-            <div class="header"><h1> </h1></div>
             <div class="sc-card">
                 <iframe id="sc-iframe" width="100%" height="320" scrolling="no" frameborder="no" allow="autoplay"
-    src="https://soundcloud.com/cyplum-lee/sets/2krwpcott7bp?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing"></iframe>
+                src="https://soundcloud.com/cyplum-lee/sets/2krwpcott7bp"></iframe>
                 <div style="display:flex; gap:12px; margin:24px 0;">
                     <input id="sc-custom-url" class="inp" style="flex:1; margin-bottom:0; height:48px; font-size:18px;" placeholder="輸入 SoundCloud 連結...">
                     <button class="btn-black" style="height:48px; font-size:18px; padding:0 24px;" onclick="app.soundcloud.load(document.getElementById('sc-custom-url').value)">播放</button>
                 </div>
                 <div class="preset-grid">
-                    <button class="preset-btn" onclick="app.soundcloud.load('https://soundcloud.com/user-928517574/9937d403064833?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing')"><i class="fa-solid fa-mug-hot"></i> Lo-Fi Girl</button>
-                    <button class="preset-btn" onclick="app.soundcloud.load('https://soundcloud.com/user-276820919/sets/yyqf2pssbxx5?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing')"><i class="fa-solid fa-piano"></i> 古典鋼琴</button>
-                    <button class="preset-btn" onclick="app.soundcloud.load('https://soundcloud.com/background-music-for-all/sets/mhjmmzrmetlz?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing')"><i class="fa-solid fa-wind"></i> 放鬆氛圍</button>
+                    <button class="preset-btn" onclick="app.soundcloud.load('https://soundcloud.com/user-928517574/9937d403064833')"><i class="fa-solid fa-mug-hot"></i> Lo-Fi Girl</button>
+                    <button class="preset-btn" onclick="app.soundcloud.load('https://soundcloud.com/user-276820919/sets/yyqf2pssbxx5')"><i class="fa-solid fa-piano"></i> 古典鋼琴</button>
+                    <button class="preset-btn" onclick="app.soundcloud.load('https://soundcloud.com/background-music-for-all/sets/mhjmmzrmetlz')"><i class="fa-solid fa-wind"></i> 放鬆氛圍</button>
                 </div>
             </div>
         </div>
@@ -288,14 +315,12 @@
 
         <div id="stats" class="view-section">
             <div class="header"><h1>學習統計</h1><p>數據分析</p></div>
-            
             <div class="stat-header-grid">
                 <div class="stat-box sb-primary"><div class="sb-label">今日學習</div><div class="sb-val" id="s-today">0m</div></div>
                 <div class="stat-box"><div class="sb-label">本週學習</div><div class="sb-val" id="s-week">0h</div></div>
                 <div class="stat-box"><div class="sb-label">連續學習</div><div class="sb-val" id="s-streak">0天</div></div>
                 <div class="stat-box"><div class="sb-label">完成率</div><div class="sb-val" id="s-rate">0%</div></div>
             </div>
-
             <div class="stat-mid-split">
                 <div class="chart-card">
                     <h3 style="margin-bottom:20px; font-size:18px;">過去7天學習趨勢</h3>
@@ -310,11 +335,15 @@
 
         <div id="about" class="view-section">
             <div class="header"><h1>作者介紹</h1><p>作者的資訊。</p></div>
-            <div style="background:white; border-radius:24px; overflow:hidden; box-shadow:var(--shadow);">
+            <div style="background:white; border-radius:24px; overflow:hidden; box-shadow:var(--shadow); margin-bottom: 20px;">
                 <iframe src="自介網站.html" style="width:100%; height:600px; border:none;"></iframe>
             </div>
+            <div style="background:white; border-radius:24px; padding:30px; box-shadow:var(--shadow);">
+                <h3>測試專區</h3>
+                <p style="color:#666; margin:10px 0;">如果您想重新體驗新手導覽功能，請點擊下方按鈕。</p>
+                <button class="btn-black" onclick="app.guide.resetAndStart()">重播新手導覽</button>
+            </div>
         </div>
-
     </div>
 </main>
 
@@ -327,8 +356,20 @@
     <div class="b-nav-item" data-target="about" onclick="app.nav('about')"><i class="fa-solid fa-user-circle"></i> 介紹</div>
 </nav>
 
-<div class="modal-overlay" id="modal-overlay"><div class="modal" id="modal-content"></div></div>
+<div id="spotlight-box" class="spotlight-overlay"></div>
+<div id="guide-tooltip" class="guide-tooltip">
+    <h3 id="gt-title">標題</h3>
+    <p id="gt-desc">說明</p>
+    <div class="guide-footer">
+        <span id="gt-count" style="font-size:12px; color:#ccc;">1/3</span>
+        <div>
+            <button class="btn-skip" onclick="app.guide.end()">跳過</button>
+            <button class="btn-next" id="gt-next-btn" onclick="app.guide.next()">下一步</button>
+        </div>
+    </div>
+</div>
 
+<div class="modal-overlay" id="modal-overlay"><div class="modal" id="modal-content"></div></div>
 <div id="pdf-viewer" class="pdf-modal-overlay">
     <div class="pdf-container">
         <div class="pdf-header">
@@ -350,12 +391,10 @@
 
     const firebaseConfig = { apiKey: "AIzaSyD9LW-VQo8ejMq1dYCC9WhdmakUXR17q9I", authDomain: "studydatabase-29aaf.firebaseapp.com", projectId: "studydatabase-29aaf", appId: "1:781290296072:web:4a8894785a0cd4cb00d2bd" };
     
-    
     const appBase = initializeApp(firebaseConfig);
     const db = getFirestore(appBase);
     const auth = getAuth(appBase);
 
-    
     window.app = window.app || {};
     window.app.db = db;
     window.app.authObj = auth;
@@ -366,9 +405,11 @@
     window.app.signInWithPopup = signInWithPopup;
 
     onAuthStateChanged(auth, u=>{ 
-        window.app.currentUser=u; 
+        window.app.currentUser = u; 
         window.app.updateAuthUI(u); 
         if(u) {
+            const isAnonymous = u.isAnonymous;
+            
             onSnapshot(doc(db,"users",u.uid), s=>{
                 if(s.exists()){
                     window.app.data={...window.app.data,...s.data()};
@@ -379,8 +420,20 @@
                     
                     window.app.checkDailyReset(); 
                     window.app.refreshAll();
-                } else window.cloudSave();
+                } else {
+                    // 資料不存在 = 新註冊，觸發導覽
+                    window.cloudSave();
+                    if (!localStorage.getItem('sf_guide_completed')) setTimeout(() => window.app.guide.start(), 1000);
+                }
             });
+
+            // 如果是匿名登入，也觸發導覽
+            if(isAnonymous && !localStorage.getItem('sf_guide_completed')) {
+                setTimeout(() => window.app.guide.start(), 1000);
+            }
+        } else {
+             // 未登入也可觸發一次體驗
+             if (!localStorage.getItem('sf_guide_completed')) setTimeout(() => window.app.guide.start(), 1000);
         }
     });
 
@@ -395,29 +448,164 @@
 <script>
     window.app = window.app || {};
     window.app = {
+        ...window.app,
         data: { tasks:[], courses:[], resources:[], events:[], stats:{focusToday:0, subjects:{'數學':0,'英文':0,'物理':0,'程式':0,'其他':0}}, history:[], lastActiveDate:'' }, 
-        
+        currentView: 'home',
+
         init: function() {
             this.updateDate(); 
             this.timer.init(); 
-            // 延遲初始化圖表，確保元件已掛載
             setTimeout(() => { this.chart.init(); this.refreshAll(); }, 500);
             document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target.id==='modal-overlay')app.modals.close()});
         },
 
+        /* --- 聚光燈導覽系統 (修正版) --- */
+        guide: {
+            currentStep: 0,
+            // 定義步驟，使用 CSS 選擇器
+            steps: [
+                {
+                    getEl: () => window.innerWidth > 768 ? '.sidebar' : '.bottom-nav',
+                    title: '功能導航區', 
+                    desc: '這裡是控制中心。你可以隨時切換到「任務」、「講義資源」或查看「學習統計」。',
+                    page: 'home'
+                },
+                {
+                    getEl: () => '#pomo-card-el', 
+                    title: 'ULTRA FOCUS 番茄鐘', 
+                    desc: '專注核心功能。點擊開始計時，系統會自動記錄你的學習時間。',
+                    page: 'home'
+                },
+                {
+                    getEl: () => '#res-input-card', 
+                    title: '雲端資源庫', 
+                    desc: '貼上 Google Drive 或 YouTube 連結，建立你的個人學習資料庫。',
+                    page: 'resources' // 這一步會切換頁面
+                },
+                {
+                    getEl: () => window.innerWidth > 768 ? '#d-auth-btn' : '#m-auth-btn', 
+                    title: '雲端同步', 
+                    desc: '強烈建議點擊這裡登入 Google 帳號，確保資料跨裝置同步！',
+                    page: 'home'
+                }
+            ],
+            
+            start: function() {
+                this.currentStep = 0;
+                document.getElementById('spotlight-box').style.display = 'block';
+                document.getElementById('guide-tooltip').style.display = 'block';
+                // 延遲一點點讓 display: block 生效後再加 opacity
+                setTimeout(() => document.getElementById('guide-tooltip').classList.add('show'), 10);
+                this.showStep();
+            },
+
+            showStep: function() {
+                const step = this.steps[this.currentStep];
+                
+                // 自動換頁邏輯
+                if (window.app.currentView !== step.page) {
+                    window.app.nav(step.page);
+                    setTimeout(() => this.highlightElement(step), 400); // 給予更充裕的頁面切換時間
+                } else {
+                    this.highlightElement(step);
+                }
+            },
+
+            highlightElement: function(step) {
+                const selector = step.getEl ? step.getEl() : step.selector;
+                let target = document.querySelector(selector);
+                
+                // 防呆：如果找不到目標，跳下一步
+                if (!target) {
+                    console.warn('Guide target not found:', selector);
+                    if(this.currentStep < this.steps.length - 1) this.next(); else this.end();
+                    return;
+                }
+
+                // 確保元素是可見的
+                target.scrollIntoView({behavior: "smooth", block: "center"});
+
+                // 計算座標
+                const rect = target.getBoundingClientRect();
+                
+                // 1. 設定聚光燈遮罩位置 (Spotlight Box)
+                const spotlight = document.getElementById('spotlight-box');
+                spotlight.style.width = rect.width + 10 + 'px';
+                spotlight.style.height = rect.height + 10 + 'px';
+                spotlight.style.top = rect.top - 5 + 'px';
+                spotlight.style.left = rect.left - 5 + 'px';
+
+                // 2. 設定說明氣泡內容
+                document.getElementById('gt-title').innerHTML = `<i class="fa-solid fa-star" style="color:#FFD700"></i> ${step.title}`;
+                document.getElementById('gt-desc').innerText = step.desc;
+                document.getElementById('gt-count').innerText = `${this.currentStep + 1} / ${this.steps.length}`;
+                document.getElementById('gt-next-btn').innerText = (this.currentStep === this.steps.length - 1) ? "開始體驗" : "下一步";
+
+                // 3. 智慧定位氣泡 (Smart Positioning)
+                const tooltip = document.getElementById('guide-tooltip');
+                const tipH = tooltip.offsetHeight || 180;
+                const tipW = tooltip.offsetWidth || 300;
+                
+                let top, left;
+
+                // 電腦版側邊欄檢測 (高度佔滿且靠左)
+                if (rect.height > window.innerHeight * 0.8 && rect.left < 100) {
+                    top = 100; 
+                    left = rect.right + 30; // 放到側邊欄右邊
+                } else {
+                    // 預設放下方
+                    top = rect.bottom + 20;
+                    left = rect.left;
+
+                    // 如果下方沒空間，改放上方
+                    if (top + tipH > window.innerHeight) {
+                        top = rect.top - tipH - 20;
+                    }
+                    // 如果右邊沒空間，靠左對齊
+                    if (left + tipW > window.innerWidth) {
+                        left = window.innerWidth - tipW - 20;
+                    }
+                }
+
+                // 防止貼邊
+                if(top < 20) top = 20;
+                if(left < 20) left = 20;
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            },
+
+            next: function() {
+                this.currentStep++;
+                if (this.currentStep < this.steps.length) {
+                    this.showStep();
+                } else {
+                    this.end();
+                }
+            },
+
+            end: function() {
+                document.getElementById('spotlight-box').style.display = 'none';
+                document.getElementById('guide-tooltip').classList.remove('show');
+                setTimeout(() => document.getElementById('guide-tooltip').style.display = 'none', 300);
+                localStorage.setItem('sf_guide_completed', 'true');
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            },
+
+            resetAndStart: function() {
+                localStorage.removeItem('sf_guide_completed');
+                location.reload(); 
+            }
+        },
+        /* ----------------------- */
+
         checkDailyReset: function() {
             const today = new Date().toISOString().split('T')[0];
             const last = app.data.lastActiveDate;
-            
             if(last && last !== today) {
                 app.data.history.push({ date: last, focus: app.data.stats.focusToday });
-                
-                
                 if(app.data.history.length > 30) app.data.history.shift();
-
-                // 重置今日數據
                 app.data.stats.focusToday = 0;
-                
                 app.data.lastActiveDate = today;
                 window.cloudSave(); 
             } else if (!last) {
@@ -426,21 +614,14 @@
         },
 
         calculateStreak: function() {
-            if(!app.data.history) return 1;
-            const today = new Date().toISOString().split('T')[0];
+            if(!app.data.history || app.data.history.length === 0) return 1;
             let streak = 1; 
-            
             const historyRev = [...app.data.history].reverse();
             let checkDate = new Date(); 
-            
             for(let h of historyRev) {
                 checkDate.setDate(checkDate.getDate() - 1);
                 const targetStr = checkDate.toISOString().split('T')[0];
-                if(h.date === targetStr) {
-                    streak++;
-                } else {
-                    break;
-                }
+                if(h.date === targetStr) { streak++; } else { break; }
             }
             return streak;
         },
@@ -459,7 +640,7 @@
             const h = u ? `<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fa-solid fa-user"></i>`;
             const b1=document.getElementById('m-auth-btn'), b2=document.getElementById('d-auth-btn');
             if(b1)b1.innerHTML=h; if(b2)b2.innerHTML=h;
-            if(u && document.getElementById('u-name-d')) document.getElementById('u-name-d').innerText = u.displayName;
+            if(u && document.getElementById('u-name-d')) document.getElementById('u-name-d').innerText = u.displayName || "匿名使用者";
         },
 
         auth: { 
@@ -473,11 +654,8 @@
             document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-item, .b-nav-item').forEach(n=>{ n.classList.remove('active'); if(n.dataset.target===id)n.classList.add('active'); });
-            
-            // 如果進入統計頁面，強制重刷圖表
-            if(id === 'stats' && this.chart && this.chart.instTrend) {
-                this.chart.updateTrend();
-            }
+            this.currentView = id; // 更新當前視圖狀態
+            if(id === 'stats' && this.chart && this.chart.instTrend) { this.chart.updateTrend(); }
         },
 
         resources: {
@@ -486,30 +664,21 @@
                 const n = document.getElementById('res-name').value;
                 const u = document.getElementById('res-url').value;
                 if(!n || !u) return alert("請輸入完整");
-
                 let type = 'link', icon = 'fa-link';
                 if(u.includes('drive.google.com')) { type='drive'; icon='fa-google-drive'; }
                 else if(u.includes('youtube')||u.includes('youtu.be')) { type='video'; icon='fa-youtube'; }
                 else if(u.endsWith('.pdf')) { type='pdf'; icon='fa-file-pdf'; }
-
                 if(!app.data.resources) app.data.resources = [];
                 app.data.resources.unshift({ id: Date.now(), name:n, url:u, type, icon });
-                
                 document.getElementById('res-name').value = '';
                 document.getElementById('res-url').value = '';
                 window.cloudSave();
             },
-            del: function(id) {
-                if(confirm('確定刪除?')) {
-                    app.data.resources = app.data.resources.filter(r => r.id !== id);
-                    window.cloudSave();
-                }
-            },
+            del: function(id) { if(confirm('確定刪除?')) { app.data.resources = app.data.resources.filter(r => r.id !== id); window.cloudSave(); } },
             render: function() {
                 const list = document.getElementById('res-list');
                 const data = app.data.resources || [];
                 if(data.length === 0) { list.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">尚無資源</div>'; return; }
-                
                 list.innerHTML = data.map(r => {
                     let action = `window.open('${r.url}','_blank')`;
                     let badge = '';
@@ -517,9 +686,7 @@
                         const safeName = r.name.replace(/'/g, "\\'");
                         action = `app.viewer.open('${r.url}', '${safeName}')`;
                         badge = `<span class="link-badge bdg-drive">預覽 PDF</span>`;
-                    } else if (r.type === 'video') {
-                        badge = `<span class="link-badge bdg-yt">影片</span>`;
-                    }
+                    } else if (r.type === 'video') { badge = `<span class="link-badge bdg-yt">影片</span>`; }
                     return `
                     <div class="link-card">
                         <div class="link-icon" onclick="${action}"><i class="fa-brands ${r.icon}"></i></div>
@@ -539,9 +706,7 @@
                 const m1 = url.match(/\/d\/(.*?)\//);
                 const m2 = url.match(/id=(.*?)(&|$)/);
                 if(m1) fileId = m1[1]; else if(m2) fileId = m2[1];
-
                 if(!fileId) { window.open(url, '_blank'); return; }
-
                 const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
                 document.getElementById('pdf-title').innerText = title;
                 document.getElementById('pdf-frame').src = previewUrl;
@@ -562,25 +727,18 @@
                 const dList = document.getElementById('dash-tasks');
                 const fList = document.getElementById('full-task-list');
                 const todos = all.filter(t=>!t.done);
-                
                 const badgeFor = (p) => {
                     if(p==='高') return `<span style="display:inline-block;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700;background:#FFD6D6;color:#B00000;margin-left:8px;">高</span>`;
                     if(p==='中') return `<span style="display:inline-block;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700;background:#FFF4D6;color:#B36B00;margin-left:8px;">中</span>`;
                     return `<span style="display:inline-block;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700;background:#E8F5E9;color:#237A00;margin-left:8px;">低</span>`;
                 };
-
                 if(dList) {
                     dList.innerHTML = todos.slice(0,3).map(t=>{
                         const b = badgeFor(t.priority||'中');
                         const est = t.est ? `<small style="color:#888;margin-left:8px">${t.est}m</small>` : '';
-                        return `
-                        <div class="task-row">
-                            <div class="check-circle" onclick="app.tasks.toggle(${t.id})"></div>
-                            <div style="font-weight:600; font-size:14px;">${t.title} ${b} ${est}</div>
-                        </div>`;
+                        return `<div class="task-row"><div class="check-circle" onclick="app.tasks.toggle(${t.id})"></div><div style="font-weight:600; font-size:14px;">${t.title} ${b} ${est}</div></div>`;
                     }).join('') || '<div style="text-align:center;color:#ccc;padding:10px;">無待辦事項</div>';
                 }
-
                 if(fList) {
                     fList.innerHTML = all.map(t=>{
                         const b = badgeFor(t.priority||'中');
@@ -588,17 +746,11 @@
                         return `
                         <div class="task-row">
                             <div class="check-circle ${t.done?'checked':''}" onclick="app.tasks.toggle(${t.id})"><i class="fa-solid fa-check" style="color:white;font-size:12px;display:${t.done?'block':'none'}"></i></div>
-                            <div style="flex:1;">
-                                <div style="font-weight:600; text-decoration:${t.done?'line-through':''}; color:${t.done?'#999':'#000'}">
-                                    ${t.title} ${b}
-                                </div>
-                                ${est}
-                            </div>
+                            <div style="flex:1;"><div style="font-weight:600; text-decoration:${t.done?'line-through':''}; color:${t.done?'#999':'#000'}">${t.title} ${b}</div>${est}</div>
                             <i class="fa-solid fa-trash" style="color:#ddd; padding:10px; cursor:pointer;" onclick="app.tasks.del(${t.id})"></i>
                         </div>`;
                     }).join('');
                 }
-
                 if(document.getElementById('d-todo')) document.getElementById('d-todo').innerText = todos.length;
                 if(document.getElementById('d-done')) document.getElementById('d-done').innerText = `${all.length-todos.length}/${all.length}`;
              },
@@ -617,9 +769,7 @@
                  const t = app.data.tasks.find(x=>x.id===id);
                  if(t){ t.done=!t.done; if(t.done)confetti({particleCount:30,origin:{y:0.6},colors:['#000']}); window.cloudSave(); }
              },
-             del: function(id) {
-                 if(confirm('刪除?')) { app.data.tasks=app.data.tasks.filter(x=>x.id!==id); window.cloudSave(); }
-             },
+             del: function(id) { if(confirm('刪除?')) { app.data.tasks=app.data.tasks.filter(x=>x.id!==id); window.cloudSave(); } },
              setSearch: function(v){}
          },
 
@@ -634,14 +784,11 @@
             },
             finish: function(){ 
                 this.active=false; clearInterval(this.int); confetti(); alert('專注完成！'); 
-                
-                // 增加時間（依照所選科目）
                 const min = Math.floor(this.max/60);
                 app.data.stats.focusToday += min;
                 const sub = this.subj || '其他';
                 if(!app.data.stats.subjects[sub]) app.data.stats.subjects[sub] = 0;
                 app.data.stats.subjects[sub] += min;
-
                 window.cloudSave(); this.reset();
             },
             reset: function(){ clearInterval(this.int); this.active=false; this.time=this.max; document.getElementById('btn-play').innerHTML='<i class="fa-solid fa-play"></i>'; this.draw(); },
@@ -665,10 +812,7 @@
                     return `<button type="button" class="subj-chip ${isActive?'active':''}" data-sub="${safe}" style="background:${isActive? '#1C1C1E' : bg}; color:${isActive? '#fff' : '#1C1C1E'}" onclick="app.timer.setSubject('${safe}')">${s}</button>`;
                 }).join('');
             },
-            setSubject: function(s){
-                this.subj = s || '其他';
-                this.renderSubjects();
-            }
+            setSubject: function(s){ this.subj = s || '其他'; this.renderSubjects(); }
          },
         schedule: {
             render: function(){
@@ -679,11 +823,8 @@
                     const c=document.createElement('div'); c.style.position='relative'; c.style.borderRight='1px solid #f5f5f7';
                     for(let h=8;h<=20;h++){const s=document.createElement('div');s.style.height='60px';s.style.borderBottom='1px solid #f9f9f9';c.appendChild(s);}
                     (app.data.courses||[]).filter(x=>x.day===d).forEach(x=>{ 
-                        const b=document.createElement('div'); 
-                        b.style.cssText=`position:absolute;left:2px;right:2px;padding:4px;border-radius:6px;font-size:10px;font-weight:700;background:#1D1D1F;color:white;top:${(x.start-8)*60}px;height:60px;overflow:hidden;cursor:pointer;`; 
-                        b.innerHTML=x.name; 
-                        b.onclick=()=>app.schedule.del(x.id);
-                        c.appendChild(b); 
+                        const b=document.createElement('div'); b.style.cssText=`position:absolute;left:2px;right:2px;padding:4px;border-radius:6px;font-size:10px;font-weight:700;background:#1D1D1F;color:white;top:${(x.start-8)*60}px;height:60px;overflow:hidden;cursor:pointer;`; 
+                        b.innerHTML=x.name; b.onclick=()=>app.schedule.del(x.id); c.appendChild(b); 
                     });
                     g.appendChild(c);
                 }
@@ -728,35 +869,23 @@
                 const tasks = app.data.tasks || [];
                 const doneCount = tasks.filter(t=>t.done).length;
                 const rate = tasks.length ? Math.round((doneCount/tasks.length)*100) : 0;
-                
                 let weekTotal = ft;
-                if(app.data.history) {
-                    app.data.history.forEach(h => weekTotal += (h.focus || 0));
-                }
-
+                if(app.data.history) { app.data.history.forEach(h => weekTotal += (h.focus || 0)); }
                 const streak = app.calculateStreak();
-
                 if(document.getElementById('s-today')) document.getElementById('s-today').innerText = ft + 'm';
                 if(document.getElementById('s-week')) document.getElementById('s-week').innerText = (weekTotal/60).toFixed(1) + 'h';
                 if(document.getElementById('s-streak')) document.getElementById('s-streak').innerText = streak + '天';
                 if(document.getElementById('s-rate')) document.getElementById('s-rate').innerText = rate + '%';
-                
                 if(document.getElementById('d-focus')) document.getElementById('d-focus').innerText = ft + 'm';
                 if(document.getElementById('d-hist-len')) document.getElementById('d-hist-len').innerText = streak + '天';
-
                 const list = document.getElementById('stat-subj-list');
                 if(!list) return;
                 const subjs = app.data.stats.subjects || {};
                 const totalS = Object.values(subjs).reduce((a,b)=>a+b, 0) || 1;
                 const sorted = Object.entries(subjs).sort((a,b)=>b[1]-a[1]);
-                
                 list.innerHTML = sorted.map(([k, v])=>{
                     const p = Math.round((v/totalS)*100);
-                    return `
-                    <div class="subj-item">
-                        <div class="subj-info"><span class="subj-name">${k}</span><span class="subj-time">${v}m (${p}%)</span></div>
-                        <div class="subj-bar-bg"><div class="subj-bar-fill" style="width:${p}%"></div></div>
-                    </div>`;
+                    return `<div class="subj-item"><div class="subj-info"><span class="subj-name">${k}</span><span class="subj-time">${v}m (${p}%)</span></div><div class="subj-bar-bg"><div class="subj-bar-fill" style="width:${p}%"></div></div></div>`;
                 }).join('');
             }
         },
@@ -782,13 +911,9 @@
                     d.setDate(d.getDate() - i);
                     const dateStr = d.toISOString().split('T')[0];
                     const record = hist.find(h => h.date === dateStr);
-                    if(dateStr === new Date().toISOString().split('T')[0]) {
-                        data.push(app.data.stats.focusToday || 0);
-                    } else if(record) {
-                        data.push(record.focus || 0);
-                    } else {
-                        data.push(0);
-                    }
+                    if(dateStr === new Date().toISOString().split('T')[0]) { data.push(app.data.stats.focusToday || 0); }
+                    else if(record) { data.push(record.focus || 0); }
+                    else { data.push(0); }
                 }
                 this.instTrend.data.datasets[0].data = data;
                 this.instTrend.update();
@@ -806,23 +931,15 @@
             const dataStr = JSON.stringify(app.data, null, 2);
             if(window.showSaveFilePicker) {
                 try {
-                    const handle = await window.showSaveFilePicker({
-                        suggestedName: 'studyflow-data.json',
-                        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
-                    });
+                    const handle = await window.showSaveFilePicker({ suggestedName: 'studyflow-data.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
                     const writable = await handle.createWritable();
-                    await writable.write(dataStr);
-                    await writable.close();
-                    alert('匯出完成');
-                    return;
+                    await writable.write(dataStr); await writable.close(); alert('匯出完成'); return;
                 } catch(e) { console.error(e); }
             }
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'studyflow-data.json'; document.body.appendChild(a); a.click();
-            a.remove(); URL.revokeObjectURL(url);
-            alert('匯出完成');
+            a.href = url; a.download = 'studyflow-data.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); alert('匯出完成');
         },
 
         importFromFile: function(e) {
@@ -834,29 +951,18 @@
                     const d = JSON.parse(r.result);
                     app.data = d || {};
                     if(!app.data.stats) app.data.stats = { focusToday:0, subjects:{} };
-                    window.cloudSave();
-                    app.refreshAll();
-                    alert('匯入完成');
-                } catch(err) {
-                    alert('匯入失敗：檔案格式錯誤');
-                }
+                    window.cloudSave(); app.refreshAll(); alert('匯入完成');
+                } catch(err) { alert('匯入失敗：檔案格式錯誤'); }
             };
-            r.readAsText(f);
-            e.target.value = '';
+            r.readAsText(f); e.target.value = '';
         },
 
         importFromFS: async function() {
             if(window.showOpenFilePicker) {
                 try {
                     const [handle] = await window.showOpenFilePicker({ types:[{ description:'JSON', accept:{ 'application/json':['.json'] } }], multiple:false });
-                    const file = await handle.getFile();
-                    const text = await file.text();
-                    const d = JSON.parse(text);
-                    app.data = d || {};
-                    window.cloudSave();
-                    app.refreshAll();
-                    alert('匯入完成');
-                    return;
+                    const file = await handle.getFile(); const text = await file.text(); const d = JSON.parse(text);
+                    app.data = d || {}; window.cloudSave(); app.refreshAll(); alert('匯入完成'); return;
                 } catch(e) { console.error(e); return; }
             }
             document.getElementById('__import_file').click();
@@ -869,9 +975,7 @@
                 overlay.classList.add('show');
                 overlay.style.display='flex';
                 if(t==='day') {
-                    const date = payload;
-                    window.app._modalDate = date;
-                    window.app._editingEventId = null;
+                    const date = payload; window.app._modalDate = date; window.app._editingEventId = null;
                     const evs = (app.data.events||[]).filter(x=>x.date===date);
                     m.innerHTML = `
                         <div style="display:flex; justify-content:flex-start; margin-bottom:10px;"><button class="back-btn" onclick="app.modals.close()">← 返回</button></div>
@@ -888,11 +992,7 @@
                          <h3>新增任務</h3>
                          <input id="t-title" class="inp" placeholder="內容...">
                          <div style="display:flex; gap:8px;">
-                             <select id="t-priority" class="inp" style="flex:1; padding:10px;">
-                                 <option value="中">優先：中</option>
-                                 <option value="高">優先：高</option>
-                                 <option value="低">優先：低</option>
-                             </select>
+                             <select id="t-priority" class="inp" style="flex:1; padding:10px;"><option value="中">優先：中</option><option value="高">優先：高</option><option value="低">優先：低</option></select>
                              <input id="t-est" class="inp" style="width:120px;" type="number" min="0" placeholder="預估分鐘">
                          </div>
                          <button class="btn-black" style="width:100%" onclick="app.tasks.add()">新增</button>
@@ -902,22 +1002,14 @@
                          <div style="display:flex; justify-content:flex-start; margin-bottom:10px;"><button class="back-btn" onclick="app.modals.close()">← 返回</button></div>
                          <h3>新增課程</h3>
                          <input id="c-name" class="inp" placeholder="課程名">
-                         <select id="c-day" class="inp">
-                             <option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option>
-                         </select>
+                         <select id="c-day" class="inp"><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option></select>
                          <input id="c-start" class="inp" type="number" placeholder="開始時間(8-20)">
                          <button class="btn-black" style="width:100%" onclick="app.schedule.add()">新增</button>
                      `;
                  }
             },
-            close: function() {
-                document.getElementById('modal-overlay').classList.remove('show');
-                setTimeout(()=>document.getElementById('modal-overlay').style.display='none', 300);
-            },
-            updateDate: function() {
-                const el = document.getElementById('date-display');
-                if(el) el.innerText = new Date().toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'});
-            }
+            close: function() { document.getElementById('modal-overlay').classList.remove('show'); setTimeout(()=>document.getElementById('modal-overlay').style.display='none', 300); },
+            updateDate: function() { const el = document.getElementById('date-display'); if(el) el.innerText = new Date().toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'}); }
         },
 
         events: {
@@ -926,40 +1018,20 @@
                 const time = document.getElementById('e-time') ? document.getElementById('e-time').value.trim() : '';
                 if(!title) return alert('請輸入活動名稱');
                 if(!app.data.events) app.data.events = [];
-                if(window.app._editingEventId) {
-                    const ev = app.data.events.find(x=>x.id===window.app._editingEventId);
-                    if(ev){ ev.title = title; ev.time = time; }
-                    window.app._editingEventId = null;
-                } else {
-                    app.data.events.push({ id: Date.now(), date, title, time });
-                }
-                window.cloudSave();
-                app.cal.render();
-                app.modals.open('day', date);
+                if(window.app._editingEventId) { const ev = app.data.events.find(x=>x.id===window.app._editingEventId); if(ev){ ev.title = title; ev.time = time; } window.app._editingEventId = null; }
+                else { app.data.events.push({ id: Date.now(), date, title, time }); }
+                window.cloudSave(); app.cal.render(); app.modals.open('day', date);
             },
             del: function(id) {
-                const ev = (app.data.events||[]).find(x=>x.id===id);
-                if(!ev) return;
-                if(confirm('刪除此活動?')) {
-                    app.data.events = (app.data.events||[]).filter(x=>x.id!==id);
-                    window.cloudSave();
-                    app.cal.render();
-                    app.modals.open('day', ev.date);
-                }
+                const ev = (app.data.events||[]).find(x=>x.id===id); if(!ev) return;
+                if(confirm('刪除此活動?')) { app.data.events = (app.data.events||[]).filter(x=>x.id!==id); window.cloudSave(); app.cal.render(); app.modals.open('day', ev.date); }
             },
             editStart: function(id) {
-                const ev = (app.data.events||[]).find(x=>x.id===id);
-                if(!ev) return;
-                window.app._editingEventId = id;
-                document.getElementById('e-title').value = ev.title;
-                document.getElementById('e-time').value = ev.time || '';
-                document.getElementById('e-title').focus();
+                const ev = (app.data.events||[]).find(x=>x.id===id); if(!ev) return;
+                window.app._editingEventId = id; document.getElementById('e-title').value = ev.title; document.getElementById('e-time').value = ev.time || ''; document.getElementById('e-title').focus();
             }
         },
-        updateDate: function() {
-            const el = document.getElementById('date-display');
-            if(el) el.innerText = new Date().toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'});
-        }
+        updateDate: function() { const el = document.getElementById('date-display'); if(el) el.innerText = new Date().toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'}); }
     };
     window.app.init();
 
@@ -973,13 +1045,10 @@
             el.innerText = `${h}:${m}:${s}`;
         }
         const dateEl = document.getElementById('date-display');
-        if (dateEl) {
-            dateEl.innerText = new Date().toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'});
-        }
+        if (dateEl) { dateEl.innerText = new Date().toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'}); }
     }
     setInterval(updateLiveClock, 1000);
     updateLiveClock();
 </script>
 </body>
 </html>
-
