@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>StudyFlow - 完整互動版</title>
+    <title>StudyFlow</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -29,31 +29,16 @@
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 80% { transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- 導覽系統專用樣式 (Spotlight) --- */
-        /* 1. 聚光燈遮罩：使用超大 box-shadow 來製造聚光燈效果 */
         .spotlight-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 999990; /* 確保在最上層 */
-            pointer-events: none; /* 讓點擊穿透到下方高亮元素 */
-            transition: all 0.4s ease;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75); /* 關鍵：用陰影蓋住全畫面 */
-            border-radius: 16px; /* 聚光燈圓角 */
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 999990; pointer-events: none; transition: all 0.4s ease;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75); border-radius: 16px;
             display: none;
         }
-        
-        /* 2. 說明氣泡 */
         .guide-tooltip {
-            position: fixed;
-            z-index: 999999; /* 比遮罩更高 */
-            background: white;
-            width: 300px;
-            padding: 24px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s, top 0.4s ease, left 0.4s ease;
+            position: fixed; z-index: 999999; background: white; width: 300px;
+            padding: 24px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            display: none; opacity: 0; transition: opacity 0.3s, top 0.4s ease, left 0.4s ease;
         }
         .guide-tooltip.show { opacity: 1; }
         .guide-tooltip h3 { margin-bottom: 10px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
@@ -61,15 +46,7 @@
         .guide-footer { display: flex; justify-content: space-between; align-items: center; }
         .btn-next { background: #000; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; }
         .btn-skip { color: #999; background: none; border: none; cursor: pointer; font-size: 14px; }
-        
-        /* 3. 強制高亮輔助類別 (JS 動態添加) */
-        .highlight-target {
-            position: relative;
-            z-index: 999995 !important; /* 讓被選中的元素浮上來 */
-            background: white; /* 避免透明背景導致看不清 */
-            pointer-events: auto !important;
-        }
-        /* ----------------------- */
+        /*---*/
 
         .sidebar { width: 260px; background: rgba(255,255,255,0.85); backdrop-filter: blur(30px); border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; padding: 32px 20px; z-index: 20; }
         .logo { font-size: 22px; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; animation: popIn 0.8s var(--ease-bounce); }
@@ -267,7 +244,7 @@
 
         <div id="resources" class="view-section">
             <div class="header"><h1>講義資源</h1><p>這裡貼上你的雲端硬碟連結</p></div>
-            <div class="res-input-card" id="res-input-card">
+            <div class="res-input-card" id="res-add-area">
                 <input id="res-name" class="inp" placeholder="名稱 (例如: 物理Ch1 講義)">
                 <input id="res-url" class="inp" placeholder="貼上 Google Drive 共用連結..." style="margin-bottom:10px;">
                 <button class="btn-black" style="width:100%;" onclick="app.resources.add()">＋ 新增資源</button>
@@ -279,7 +256,7 @@
 
         <div id="music" class="view-section">
             <div class="header"><h1>專注音樂</h1></div>
-            <div class="sc-card">
+            <div class="sc-card" id="music-card-el">
                 <iframe id="sc-iframe" width="100%" height="320" scrolling="no" frameborder="no" allow="autoplay"
                 src="https://soundcloud.com/cyplum-lee/sets/2krwpcott7bp"></iframe>
                 <div style="display:flex; gap:12px; margin:24px 0;">
@@ -296,13 +273,15 @@
 
         <div id="tasks" class="view-section">
             <div class="header"><h1>任務清單</h1></div>
-            <div style="display:flex; gap:10px; margin-bottom:20px;"><input class="inp" style="margin:0;" placeholder="搜尋..." oninput="app.tasks.setSearch(this.value)"><button class="btn-black" onclick="app.modals.open('task')">＋</button></div>
+            <div id="task-input-el" style="display:flex; gap:10px; margin-bottom:20px;"><input class="inp" style="margin:0;" placeholder="搜尋..." oninput="app.tasks.setSearch(this.value)"><button class="btn-black" onclick="app.modals.open('task')">＋</button></div>
             <div id="full-task-list"></div>
         </div>
 
         <div id="schedule" class="view-section">
             <div class="header"><h1>課表</h1><button class="btn-black" style="padding:6px 12px; font-size:12px;" onclick="app.modals.open('c')">＋ 課程</button></div>
-            <div style="background:white; border-radius:24px; overflow-x:auto; padding-bottom:10px; box-shadow:var(--shadow);"><div id="sch-grid" style="display:grid; grid-template-columns: 40px repeat(7, minmax(70px, 1fr)); min-width:600px;"></div></div>
+            <div style="background:white; border-radius:24px; overflow-x:auto; padding-bottom:10px; box-shadow:var(--shadow);">
+                <div id="sch-grid" style="display:grid; grid-template-columns: 40px repeat(7, minmax(70px, 1fr)); min-width:600px;"></div>
+            </div>
         </div>
 
         <div id="calendar" class="view-section">
@@ -322,7 +301,7 @@
                 <div class="stat-box"><div class="sb-label">完成率</div><div class="sb-val" id="s-rate">0%</div></div>
             </div>
             <div class="stat-mid-split">
-                <div class="chart-card">
+                <div id="chart-card" class="chart-card">
                     <h3 style="margin-bottom:20px; font-size:18px;">過去7天學習趨勢</h3>
                     <div style="flex:1; position:relative;"><canvas id="chartTrend"></canvas></div>
                 </div>
@@ -335,13 +314,13 @@
 
         <div id="about" class="view-section">
             <div class="header"><h1>作者介紹</h1><p>作者的資訊。</p></div>
-            <div style="background:white; border-radius:24px; overflow:hidden; box-shadow:var(--shadow); margin-bottom: 20px;">
+            <div style="background:white; border-radius:24px; overflow:hidden; box-shadow:var(--shadow);">
                 <iframe src="自介網站.html" style="width:100%; height:600px; border:none;"></iframe>
             </div>
-            <div style="background:white; border-radius:24px; padding:30px; box-shadow:var(--shadow);">
-                <h3>測試專區</h3>
-                <p style="color:#666; margin:10px 0;">如果您想重新體驗新手導覽功能，請點擊下方按鈕。</p>
-                <button class="btn-black" onclick="app.guide.resetAndStart()">重播新手導覽</button>
+            
+            <div style="margin-top:20px; padding:20px; background:white; border-radius:24px; text-align:center;">
+                 <p style="color:#888; margin-bottom:10px;">想重新看一次導覽嗎？</p>
+                 <button class="btn-black" onclick="app.guide.resetAndStart()">重播新手導覽</button>
             </div>
         </div>
     </div>
@@ -409,31 +388,19 @@
         window.app.updateAuthUI(u); 
         if(u) {
             const isAnonymous = u.isAnonymous;
-            
             onSnapshot(doc(db,"users",u.uid), s=>{
                 if(s.exists()){
                     window.app.data={...window.app.data,...s.data()};
-                    if(!window.app.data.resources) window.app.data.resources = [];
-                    if(!window.app.data.history) window.app.data.history = [];
-                    if(!window.app.data.events) window.app.data.events = [];
-                    if(!window.app.data.stats.subjects) window.app.data.stats.subjects = {'數學':0,'英文':0,'物理':0,'程式':0,'其他':0};
-                    
                     window.app.checkDailyReset(); 
                     window.app.refreshAll();
                 } else {
-                    // 資料不存在 = 新註冊，觸發導覽
                     window.cloudSave();
-                    if (!localStorage.getItem('sf_guide_completed')) setTimeout(() => window.app.guide.start(), 1000);
+                    if (!localStorage.getItem('sf_guide_done')) setTimeout(() => window.app.guide.start(), 1000);
                 }
             });
-
-            // 如果是匿名登入，也觸發導覽
-            if(isAnonymous && !localStorage.getItem('sf_guide_completed')) {
-                setTimeout(() => window.app.guide.start(), 1000);
-            }
+            if(isAnonymous && !localStorage.getItem('sf_guide_done')) setTimeout(() => window.app.guide.start(), 1000);
         } else {
-             // 未登入也可觸發一次體驗
-             if (!localStorage.getItem('sf_guide_completed')) setTimeout(() => window.app.guide.start(), 1000);
+             if (!localStorage.getItem('sf_guide_done')) setTimeout(() => window.app.guide.start(), 1000);
         }
     });
 
@@ -459,33 +426,61 @@
             document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target.id==='modal-overlay')app.modals.close()});
         },
 
-        /* --- 聚光燈導覽系統 (修正版) --- */
         guide: {
             currentStep: 0,
-            // 定義步驟，使用 CSS 選擇器
             steps: [
                 {
                     getEl: () => window.innerWidth > 768 ? '.sidebar' : '.bottom-nav',
-                    title: '功能導航區', 
-                    desc: '這裡是控制中心。你可以隨時切換到「任務」、「講義資源」或查看「學習統計」。',
+                    title: '歡迎光臨', 
+                    desc: '這裡是導航列。點擊這裡可以切換到不同的功能頁面。',
                     page: 'home'
                 },
                 {
                     getEl: () => '#pomo-card-el', 
-                    title: 'ULTRA FOCUS 番茄鐘', 
-                    desc: '專注核心功能。點擊開始計時，系統會自動記錄你的學習時間。',
+                    title: '番茄鐘', 
+                    desc: '學習的核心。設定時間、選擇科目，開始深度專注。系統會自動記錄你的努力。',
                     page: 'home'
                 },
                 {
-                    getEl: () => '#res-input-card', 
+                    getEl: () => '#res-add-area', 
                     title: '雲端資源庫', 
-                    desc: '貼上 Google Drive 或 YouTube 連結，建立你的個人學習資料庫。',
-                    page: 'resources' // 這一步會切換頁面
+                    desc: '在這裡貼上 Google Drive 或 YouTube 連結，製作個人的學習資料庫。',
+                    page: 'resources'
+                },
+                {
+                    getEl: () => '#music-card-el', 
+                    title: '專注音樂', 
+                    desc: '內建 Lo-Fi 與白噪音，也支援 SoundCloud，為你營造學習氛圍。',
+                    page: 'music' // 自動切換到音樂頁
+                },
+                {
+                    getEl: () => '#task-input-el', 
+                    title: '任務清單', 
+                    desc: '管理待辦事項。輸入任務名稱並按下 + 即可新增，完成後打勾標記。',
+                    page: 'tasks' // 自動切換到任務頁
+                },
+                {
+                    getEl: () => '#sch-grid', 
+                    title: '每週課表', 
+                    desc: '掌握每天的課程安排。',
+                    page: 'schedule' // 課表頁
+                },
+                {
+                    getEl: () => '#cal-body', 
+                    title: '行事曆', 
+                    desc: '紀錄考試日期、作業截止日等重要事件，點擊日期即可快速新增。',
+                    page: 'calendar' // 行事曆頁
+                },
+                {
+                    getEl: () => '#chart-card', 
+                    title: '學習統計', 
+                    desc: '這裡會分析你的學習趨勢與科目分佈。看著曲線上升，就是進步的證明！',
+                    page: 'stats' // 統計頁
                 },
                 {
                     getEl: () => window.innerWidth > 768 ? '#d-auth-btn' : '#m-auth-btn', 
                     title: '雲端同步', 
-                    desc: '強烈建議點擊這裡登入 Google 帳號，確保資料跨裝置同步！',
+                    desc: '最後，強烈建議點擊這裡登入 Google 帳號，讓資料在所有裝置間同步！',
                     page: 'home'
                 }
             ],
@@ -494,7 +489,6 @@
                 this.currentStep = 0;
                 document.getElementById('spotlight-box').style.display = 'block';
                 document.getElementById('guide-tooltip').style.display = 'block';
-                // 延遲一點點讓 display: block 生效後再加 opacity
                 setTimeout(() => document.getElementById('guide-tooltip').classList.add('show'), 10);
                 this.showStep();
             },
@@ -502,10 +496,11 @@
             showStep: function() {
                 const step = this.steps[this.currentStep];
                 
-                // 自動換頁邏輯
+                // 自動換頁邏輯：如果當前頁面不是目標頁面，先切換
                 if (window.app.currentView !== step.page) {
                     window.app.nav(step.page);
-                    setTimeout(() => this.highlightElement(step), 400); // 給予更充裕的頁面切換時間
+                    // 給一點時間讓頁面渲染完成
+                    setTimeout(() => this.highlightElement(step), 400); 
                 } else {
                     this.highlightElement(step);
                 }
@@ -515,33 +510,27 @@
                 const selector = step.getEl ? step.getEl() : step.selector;
                 let target = document.querySelector(selector);
                 
-                // 防呆：如果找不到目標，跳下一步
+                // 如果找不到目標，跳下一步 (防呆)
                 if (!target) {
                     console.warn('Guide target not found:', selector);
                     if(this.currentStep < this.steps.length - 1) this.next(); else this.end();
                     return;
                 }
 
-                // 確保元素是可見的
                 target.scrollIntoView({behavior: "smooth", block: "center"});
 
-                // 計算座標
                 const rect = target.getBoundingClientRect();
-                
-                // 1. 設定聚光燈遮罩位置 (Spotlight Box)
                 const spotlight = document.getElementById('spotlight-box');
                 spotlight.style.width = rect.width + 10 + 'px';
                 spotlight.style.height = rect.height + 10 + 'px';
                 spotlight.style.top = rect.top - 5 + 'px';
                 spotlight.style.left = rect.left - 5 + 'px';
 
-                // 2. 設定說明氣泡內容
                 document.getElementById('gt-title').innerHTML = `<i class="fa-solid fa-star" style="color:#FFD700"></i> ${step.title}`;
                 document.getElementById('gt-desc').innerText = step.desc;
                 document.getElementById('gt-count').innerText = `${this.currentStep + 1} / ${this.steps.length}`;
                 document.getElementById('gt-next-btn').innerText = (this.currentStep === this.steps.length - 1) ? "開始體驗" : "下一步";
 
-                // 3. 智慧定位氣泡 (Smart Positioning)
                 const tooltip = document.getElementById('guide-tooltip');
                 const tipH = tooltip.offsetHeight || 180;
                 const tipW = tooltip.offsetWidth || 300;
@@ -550,29 +539,15 @@
 
                 // 電腦版側邊欄檢測 (高度佔滿且靠左)
                 if (rect.height > window.innerHeight * 0.8 && rect.left < 100) {
-                    top = 100; 
-                    left = rect.right + 30; // 放到側邊欄右邊
+                    top = 100; left = rect.right + 30; 
                 } else {
-                    // 預設放下方
-                    top = rect.bottom + 20;
-                    left = rect.left;
-
-                    // 如果下方沒空間，改放上方
-                    if (top + tipH > window.innerHeight) {
-                        top = rect.top - tipH - 20;
-                    }
-                    // 如果右邊沒空間，靠左對齊
-                    if (left + tipW > window.innerWidth) {
-                        left = window.innerWidth - tipW - 20;
-                    }
+                    top = rect.bottom + 20; left = rect.left;
+                    if (top + tipH > window.innerHeight) top = rect.top - tipH - 20;
+                    if (left + tipW > window.innerWidth) left = window.innerWidth - tipW - 20;
                 }
+                if(top < 20) top = 20; if(left < 20) left = 20;
 
-                // 防止貼邊
-                if(top < 20) top = 20;
-                if(left < 20) left = 20;
-
-                tooltip.style.top = `${top}px`;
-                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`; tooltip.style.left = `${left}px`;
             },
 
             next: function() {
@@ -588,12 +563,12 @@
                 document.getElementById('spotlight-box').style.display = 'none';
                 document.getElementById('guide-tooltip').classList.remove('show');
                 setTimeout(() => document.getElementById('guide-tooltip').style.display = 'none', 300);
-                localStorage.setItem('sf_guide_completed', 'true');
+                localStorage.setItem('sf_guide_done', 'true');
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             },
 
             resetAndStart: function() {
-                localStorage.removeItem('sf_guide_completed');
+                localStorage.removeItem('sf_guide_done');
                 location.reload(); 
             }
         },
@@ -654,7 +629,7 @@
             document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-item, .b-nav-item').forEach(n=>{ n.classList.remove('active'); if(n.dataset.target===id)n.classList.add('active'); });
-            this.currentView = id; // 更新當前視圖狀態
+            this.currentView = id; // 更新 View 狀態
             if(id === 'stats' && this.chart && this.chart.instTrend) { this.chart.updateTrend(); }
         },
 
@@ -770,7 +745,7 @@
                  if(t){ t.done=!t.done; if(t.done)confetti({particleCount:30,origin:{y:0.6},colors:['#000']}); window.cloudSave(); }
              },
              del: function(id) { if(confirm('刪除?')) { app.data.tasks=app.data.tasks.filter(x=>x.id!==id); window.cloudSave(); } },
-             setSearch: function(v){}
+             setSearch: function(v){ this.render(); }
          },
 
         timer: {
